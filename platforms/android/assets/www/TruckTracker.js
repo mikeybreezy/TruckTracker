@@ -1,6 +1,194 @@
-function gps_distance(lat1, lon1, lat2, lon2)
-{
-	// http://www.movable-type.co.uk/scripts/latlong.html
+/**************************************************************************
+	
+	Much of this code was adapted from Logan Mortimer and his tutorial on 
+	how to "Build an Exercise Tracking App: Persistence & Graphing"
+	(http://mobile.tutsplus.com/tutorials/mobile-web-apps/build-an-exercise-tracking-app-persistence-graphing/)
+	Published June 8th 2012
+
+***************************************************************************/
+
+
+/** @file       TruckTracker.js
+ *  @brief      Various functions used to run the TruckTracker app 
+ *				  
+ *  @details    Uses EventListeners to manage the specific functions that occur at various events
+ *				
+ *				onDeviceReady
+ *				clrStorage
+ *				seedGPS
+ *				gps_distance
+ *
+ *
+ *  @author     Michael Barnes		micbarn@rams.colostate.edu
+ *  @date       7/18/2013
+*/
+
+
+
+/* Function for the main event listener at init.
+	--Make sure internet access is avail
+	--declare event listeners for buttons
+		--Home
+			--Clear local storage
+			--Load seed gps data
+		--Track Workout
+			--Start
+			--Stop
+		--History
+*/
+function onDeviceReady() {
+	//check for internet action --refresh if none
+	if(navigator.network.connection.type == Connection.NONE){
+		$("#home_network_button").text('No Internet Access')
+								 .attr("data-icon", "delete")
+								 .button('refresh');
+	}
+
+	//Event listeners
+	document.getElementById("home_clearstorage_button").addEventListener("click", clrStorage, false);
+	document.getElementById("home_seedgps_button").addEventListener("click", seedGPS, false);
+	document.getElementById("startTracking_start").addEventListener("click", StartButton, false);
+	document.getElementById("startTracking_stop").addEventListener("click", StopButton, false);
+	document.getElementById("history_tracklist").addEventListener("click", historyBtn, false);
+
+}
+	
+//clear local storage
+function clrStorage() { 
+	window.localStorage.clear(); 
+}
+
+//seed GPS data for emulation
+function seedGPS() {
+	window.localStorage.setItem(
+		'Sample block', 
+		'[{"timestamp":1335700802000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33488333333335,
+				"accuracy":0,
+				"latitude":-45.87475166666666,
+				"speed":null,
+				"altitudeAccuracy":null}},
+
+			{"timestamp":1335700803000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33481666666665,
+				"accuracy":0,
+				"latitude":-45.87465,
+				"speed":null,
+				"altitudeAccuracy":null}},
+
+			{"timestamp":1335700804000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33426999999998,
+				"accuracy":0,
+				"latitude":-45.873708333333326,
+				"speed":null,
+				"altitudeAccuracy":null}},
+
+			{"timestamp":1335700805000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33318333333335,
+				"accuracy":0,
+				"latitude":-45.87178333333333,
+				"speed":null,
+				"altitudeAccuracy":null}},
+
+			{"timestamp":1335700806000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33416166666666,
+				"accuracy":0,
+				"latitude":-45.871478333333336,
+				"speed":null,
+				"altitudeAccuracy":null}},
+
+			{"timestamp":1335700807000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33526833333332,
+				"accuracy":0,
+				"latitude":-45.873394999999995,
+				"speed":null,
+				"altitudeAccuracy":null}},
+
+			{"timestamp":1335700808000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33427333333336,
+				"accuracy":0,
+				"latitude":-45.873711666666665,
+				"speed":null,
+				"altitudeAccuracy":null}},
+
+			{"timestamp":1335700809000,
+			"coords":{
+				"heading":null,
+				"altitude":null,
+				"longitude":170.33488333333335,
+				"accuracy":0,
+				"latitude":-45.87475166666666,
+				"speed":null,
+				"altitudeAccuracy":null}}]');
+
+}
+
+function StartButton() {
+	// Start tracking the User
+    watch_id = navigator.geolocation.watchPosition(
+    	// Success
+        function(position){
+            tracking_data.push(position);
+        },
+        // Error
+        function(error){
+            console.log(error);
+        }, 
+        // Settings
+        { frequency: 3000, enableHighAccuracy: true });
+
+    // Tidy up the UI
+    track_id = $("#track_id").val(); //get track_id info from text field 
+    $("#track_id").hide(); //hide the track_id field
+    //display "Tracking workout: track_id" in place of prev txt field.
+    $("#startTracking_status").html("Tracking workout: <strong>" + track_id + "</strong>");
+}
+
+function StopButton(){
+	// Stop tracking the user
+	navigator.geolocation.clearWatch(watch_id);
+	// Save the tracking data
+	window.localStorage.setItem(track_id, JSON.stringify(tracking_data));
+
+	// Reset watch_id and tracking_data 
+	watch_id = null;
+	//gotta set the tracking to an empty array to reset
+	tracking_data = []; //don't use null or it'll crash! xD
+
+	// Tidy up the UI
+	$("#track_id").val("").show(); //display track_id again
+	//print stop message
+	$("#startTracking_status").html("Stopped tracking workout: <strong>" + track_id + "</strong>");
+}
+
+function gps_distance(lat1, lon1, lat2, lon2){
+	/* Check out Movable Type Scripts site to get more info
+		on how to calculate distance, bearing, & more between
+		Lat/Long points.
+
+	--> http://www.movable-type.co.uk/scripts/latlong.html <--   */
+
     var R = 6371; // km
     var dLat = (lat2-lat1) * (Math.PI / 180);
     var dLon = (lon2-lon1) * (Math.PI / 180);
@@ -15,124 +203,16 @@ function gps_distance(lat1, lon1, lat2, lon2)
     return d;
 }
 
-function StartButton() {
-	// Start tracking the User
-    watch_id = navigator.geolocation.watchPosition(
-    
-    	// Success
-        function(position){
-            tracking_data.push(position);
-        },
-        
-        // Error
-        function(error){
-            console.log(error);
-        },
-        
-        // Settings
-        { frequency: 3000, enableHighAccuracy: true });
-    
-    // Tidy up the UI
-    track_id = $("#track_id").val();
-    
-    $("#track_id").hide();
-    
-    $("#startTracking_status").html("Tracking workout: <strong>" + track_id + "</strong>");
-}
-
-function StopButton(){
-	// Stop tracking the user
-	navigator.geolocation.clearWatch(watch_id);
-	
-	// Save the tracking data
-	window.localStorage.setItem(track_id, JSON.stringify(tracking_data));
-
-	// Reset watch_id and tracking_data 
-	watch_id = null;
-	tracking_data = [];
-
-	// Tidy up the UI
-	$("#track_id").val("").show();
-	
-	$("#startTracking_status").html("Stopped tracking workout: <strong>" + track_id + "</strong>");
-}
-
-function onDeviceReady() {
-	if(navigator.network.connection.type == Connection.NONE){
-		$("#home_network_button").text('No Internet Access')
-								 .attr("data-icon", "delete")
-								 .button('refresh');
-	}
-	
-	document.getElementById("startTracking_start").addEventListener("click", StartButton, false);
-	
-	document.getElementById("startTracking_stop").addEventListener("click", StopButton, false);
-}
-
-document.addEventListener("deviceready", onDeviceReady, false);
 
 
+//*****************************************************************************************
+//--> Init event listener that calls deviceready function which calls all other functions
+//*****************************************************************************************
 
 var track_id = '';      // Name/ID of the exercise
 var watch_id = null;    // ID of the geolocation
 var tracking_data = []; // Array containing GPS position objects
-
-/*
-$("#startTracking_start").on('click', function(){
-    
-	// Start tracking the User
-    watch_id = navigator.geolocation.watchPosition(
-    
-    	// Success
-        function(position){
-            tracking_data.push(position);
-        },
-        
-        // Error
-        function(error){
-            console.log(error);
-        },
-        
-        // Settings
-        { frequency: 3000, enableHighAccuracy: true });
-    
-    // Tidy up the UI
-    track_id = $("#track_id").val();
-    
-    $("#track_id").hide();
-    
-    $("#startTracking_status").html("Tracking workout: <strong>" + track_id + "</strong>");
-});
-
-
-$("#startTracking_stop").on('click', function(){
-	
-	// Stop tracking the user
-	navigator.geolocation.clearWatch(watch_id);
-	
-	// Save the tracking data
-	window.localStorage.setItem(track_id, JSON.stringify(tracking_data));
-
-	// Reset watch_id and tracking_data 
-	watch_id = null;
-	tracking_data = [];
-
-	// Tidy up the UI
-	$("#track_id").val("").show();
-	
-	$("#startTracking_status").html("Stopped tracking workout: <strong>" + track_id + "</strong>");
-
-});
-*/
-
-$("#home_clearstorage_button").on('click', function(){
-	window.localStorage.clear();
-});
-
-$("#home_seedgps_button").on('click', function(){
-	window.localStorage.setItem('Sample block', '[{"timestamp":1335700802000,"coords":{"heading":null,"altitude":null,"longitude":170.33488333333335,"accuracy":0,"latitude":-45.87475166666666,"speed":null,"altitudeAccuracy":null}},{"timestamp":1335700803000,"coords":{"heading":null,"altitude":null,"longitude":170.33481666666665,"accuracy":0,"latitude":-45.87465,"speed":null,"altitudeAccuracy":null}},{"timestamp":1335700804000,"coords":{"heading":null,"altitude":null,"longitude":170.33426999999998,"accuracy":0,"latitude":-45.873708333333326,"speed":null,"altitudeAccuracy":null}},{"timestamp":1335700805000,"coords":{"heading":null,"altitude":null,"longitude":170.33318333333335,"accuracy":0,"latitude":-45.87178333333333,"speed":null,"altitudeAccuracy":null}},{"timestamp":1335700806000,"coords":{"heading":null,"altitude":null,"longitude":170.33416166666666,"accuracy":0,"latitude":-45.871478333333336,"speed":null,"altitudeAccuracy":null}},{"timestamp":1335700807000,"coords":{"heading":null,"altitude":null,"longitude":170.33526833333332,"accuracy":0,"latitude":-45.873394999999995,"speed":null,"altitudeAccuracy":null}},{"timestamp":1335700808000,"coords":{"heading":null,"altitude":null,"longitude":170.33427333333336,"accuracy":0,"latitude":-45.873711666666665,"speed":null,"altitudeAccuracy":null}},{"timestamp":1335700809000,"coords":{"heading":null,"altitude":null,"longitude":170.33488333333335,"accuracy":0,"latitude":-45.87475166666666,"speed":null,"altitudeAccuracy":null}}]');
-
-});
+document.addEventListener("deviceready", onDeviceReady, false);
 
 // When the user views the history page
 $('#history').on('pageshow', function () {
@@ -237,3 +317,53 @@ $('#track_info').on('pageshow', function(){
    
 		
 });
+
+
+// --> Old event handler structure <--
+/*
+$("#startTracking_start").on('click', function(){
+    
+	// Start tracking the User
+    watch_id = navigator.geolocation.watchPosition(
+    
+    	// Success
+        function(position){
+            tracking_data.push(position);
+        },
+        
+        // Error
+        function(error){
+            console.log(error);
+        },
+        
+        // Settings
+        { frequency: 3000, enableHighAccuracy: true });
+    
+    // Tidy up the UI
+    track_id = $("#track_id").val();
+    
+    $("#track_id").hide();
+    
+    $("#startTracking_status").html("Tracking workout: <strong>" + track_id + "</strong>");
+});
+
+
+$("#startTracking_stop").on('click', function(){
+	
+	// Stop tracking the user
+	navigator.geolocation.clearWatch(watch_id);
+	
+	// Save the tracking data
+	window.localStorage.setItem(track_id, JSON.stringify(tracking_data));
+
+	// Reset watch_id and tracking_data 
+	watch_id = null;
+	tracking_data = [];
+
+	// Tidy up the UI
+	$("#track_id").val("").show();
+	
+	$("#startTracking_status").html("Stopped tracking workout: <strong>" + track_id + "</strong>");
+
+});
+*/

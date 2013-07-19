@@ -7,7 +7,11 @@
 <TextView
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
+<<<<<<< HEAD
     android:text="TruckTracker"
+=======
+    android:text="Hello World, TruckTracker"
+>>>>>>> dd96c91b86344836e3a394717f1e60ebf2aef11b
     />
 </LinearLayout>
 
